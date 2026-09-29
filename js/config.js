@@ -92,7 +92,6 @@ let config = {
         diagnosticsBody: "#diagnosticsBody",
         checkEmulationButton: "#checkEmulationButton",
         runLog: "#runLog",
-        runLogHead: "#runLogHead",
         lastRunLabel: "#lastRunLabel",
         statsToday: "#statsToday",
         statsStreak: "#statsStreak",
