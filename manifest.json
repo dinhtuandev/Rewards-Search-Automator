@@ -1,6 +1,6 @@
 {
     "name": "Rewards Search Automator",
-    "version": "2.1.1",
+    "version": "2.4.0",
     "description": "With this extension, you can automate searches on the Bing search engine to earn points for Microsoft Rewards.",
     "manifest_version": 3,
     "author": "Andrea Corriga - Strifelab",
@@ -14,12 +14,16 @@
         "alarms",
         "storage"
     ],
+    "host_permissions": [
+        "https://*.bing.com/*"
+    ],
     "icons": {
         "16": "img/icon16.png",
         "48": "img/icon48.png",
         "128": "img/icon128.png"
     },
     "background": {
-        "service_worker": "./js/background.js"
+        "service_worker": "./js/background.js",
+        "type": "module"
     }
 }

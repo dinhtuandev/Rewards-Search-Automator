@@ -21,8 +21,43 @@
     </div>
 
     <div class="container-fluid px-3">
-        <!-- Action Buttons -->
+        <!-- Stats -->
         <div class="row g-2 mb-3">
+            <div class="col-4">
+                <div class="stat-tile">
+                    <span class="stat-value" id="statsToday">0</span>
+                    <span class="stat-label">today</span>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="stat-tile">
+                    <span class="stat-value" id="statsStreak">0</span>
+                    <span class="stat-label">day streak</span>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="stat-tile">
+                    <span class="stat-value" id="statsTotal">0</span>
+                    <span class="stat-label">all time</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Presets -->
+        <div class="row g-2 mb-2">
+            <div class="col-4">
+                <button type="button" class="btn btn-preset w-100" id="presetQuick">Quick</button>
+            </div>
+            <div class="col-4">
+                <button type="button" class="btn btn-preset w-100" id="presetDaily">Daily</button>
+            </div>
+            <div class="col-4">
+                <button type="button" class="btn btn-preset w-100" id="presetHeavy">Heavy</button>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="row g-2 mb-2">
             <div class="col-4">
                 <button type="button" class="btn btn-action btn-desktop w-100" id="desktopButton">
                     <i class="fa-solid fa-desktop"></i>
@@ -43,8 +78,17 @@
             </div>
         </div>
 
+        <div class="row g-2 mb-3">
+            <div class="col-12">
+                <button type="button" class="btn btn-stop w-100" id="stopButton" style="display: none;">
+                    <i class="fa-solid fa-stop"></i>
+                    <span>Stop run</span>
+                </button>
+            </div>
+        </div>
+
         <!-- Progress Bar -->
-        <div class="row mb-3">
+        <div class="row mb-1">
             <div class="col-12">
                 <div class="progress">
                     <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
@@ -53,22 +97,53 @@
                 </div>
             </div>
         </div>
+        <div class="row mb-3">
+            <div class="col-12">
+                <small class="d-block text-center progress-label" id="progressLabel"></small>
+                <small class="d-block text-center eta-label" id="etaLabel"></small>
+                <small class="d-block text-center countdown-label" id="countdownLabel"></small>
+                <small class="d-block text-center keyword-pool-label" id="keywordPoolLabel"></small>
+            </div>
+        </div>
 
-        <!-- Settings Form -->
+        <!-- Emulation Diagnostics -->
+        <div class="alert alert-info alert-dismissible fade" id="diagnosticsPanel" style="display: none;">
+            <strong>Emulation check</strong>
+            <div id="diagnosticsBody" class="mt-1 diagnostics-body"></div>
+        </div>
+
+        <div class="row g-2 mb-2">
+            <div class="col-12">
+                <button type="button" class="btn btn-check w-100" id="checkEmulationButton">
+                    <i class="fa-solid fa-stethoscope"></i>
+                    <span>Check emulation</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Error / Success Notification -->
+        <div class="alert alert-danger alert-dismissible fade" id="errorNotification" style="display: none; margin-bottom: 10px;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span id="errorText"></span>
+        </div>
+        <div class="alert alert-success alert-dismissible fade" id="saveNotification" style="display: none; margin-bottom: 10px;">
+            <i class="fa-solid fa-check-circle"></i>
+            <span id="saveText">Configuration saved.</span>
+        </div>
+
+        <!-- Settings -->
         <div class="row g-2 mb-2">
             <div class="col-6">
                 <label class="form-label">
                     <i class="fa-solid fa-desktop"></i> Desktop
                 </label>
-                <input type="number" class="form-control form-control-sm" 
-                    id="totDesktopSearchesForm" min="1" value="">
+                <input type="number" class="form-control form-control-sm" id="totDesktopSearchesForm" min="1" value="">
             </div>
             <div class="col-6">
                 <label class="form-label">
                     <i class="fa-solid fa-mobile-screen"></i> Mobile
                 </label>
-                <input type="number" class="form-control form-control-sm" 
-                    id="totMobileSearchesForm" min="1" value="">
+                <input type="number" class="form-control form-control-sm" id="totMobileSearchesForm" min="1" value="">
             </div>
         </div>
 
@@ -89,8 +164,7 @@
             </div>
         </div>
 
-        <!-- Save Configuration Button -->
-        <div class="row g-2 mb-2">
+        <div class="row g-2 mb-3">
             <div class="col-12">
                 <button type="button" class="btn btn-save-config w-100" id="saveConfigButton">
                     <i class="fa-solid fa-floppy-disk"></i>
@@ -99,20 +173,22 @@
             </div>
         </div>
 
-        <!-- Save Notification -->
-        <div class="alert alert-success alert-dismissible fade" id="saveNotification" style="display: none; margin-bottom: 10px;">
-            <i class="fa-solid fa-check-circle"></i>
-            <strong>Saved!</strong> Configuration saved successfully.
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <!-- Run log -->
+        <div class="row g-2 mb-2">
+            <div class="col-12">
+                <div class="runlog-head">
+                    <span>Recent searches</span>
+                    <button type="button" class="runlog-clear" id="clearStatsButton">clear</button>
+                </div>
+                <small class="last-run-label" id="lastRunLabel"></small>
+                <div class="runlog" id="runLog"></div>
+            </div>
         </div>
 
         <!-- F1 Promo Banner -->
         <div class="row">
             <div class="col-12">
-                <a href="" 
-                   target="_blank" 
-                   class="btn-f1-promo"
-                   id="btn-f1-promo">
+                <a href="" target="_blank" class="btn-f1-promo" id="btn-f1-promo">
                     <i class="fa-solid fa-flag-checkered"></i>
                     <span>Formula 1 Fan?</span>
                     <i class="fa-solid fa-arrow-right"></i>
@@ -145,7 +221,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link footer-link" href="" 
+                    <a class="nav-link footer-link" href=""
                         target="_blank" title="Microsoft Rewards" id="rewardsLink">
                         <i class="fa-solid fa-medal"></i>
                     </a>

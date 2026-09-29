@@ -1,0 +1,14 @@
+{
+  "name": "rewards-search-automator",
+  "version": "2.4.0",
+  "private": true,
+  "description": "Chrome MV3 extension that automates Bing searches for Microsoft Rewards.",
+  "scripts": {
+    "test": "node tools/smoke.test.mjs",
+    "check:ui": "node tools/check-ui.mjs",
+    "build:keywords": "node tools/build-keywords.js",
+    "hooks:install": "node tools/install-hooks.js",
+    "check": "npm run test && npm run check:ui"
+  },
+  "license": "MIT"
+}
