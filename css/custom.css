@@ -25,7 +25,11 @@
 
 body {
     width: 450px;
-    height: 450px;
+    /* Grows with the content instead of forcing 450px. The stats row, presets,
+       stop button and run log overflowed the fixed height and pushed the Save
+       button and the min/max fields under the fixed footer. */
+    min-height: 420px;
+    max-height: 580px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: var(--text-primary);
@@ -34,7 +38,9 @@ body {
     margin: 0;
     padding: 0;
     padding-top: 20px;
-    padding-bottom: 60px;
+    /* Clears the fixed footer (45px min-height + 8px padding each side), so the
+       last form control is never hidden underneath it. */
+    padding-bottom: 84px;
 }
 
 /* ========================================
@@ -190,7 +196,7 @@ body {
    ======================================== */
 
 .progress {
-    height: 8px;
+    height: 16px;
     background: rgba(255, 255, 255, 0.3);
     border-radius: 10px;
     overflow: hidden;
@@ -198,10 +204,13 @@ body {
 }
 
 .progress-bar {
-    background: linear-gradient(90deg, #0078d4, #7c3aed, #10b981);
+    /* Deliberately no Bootstrap striped/animated classes: both declare an
+       `animation` on background-position, and the later declaration silently
+       wins, which flattens the gradient and makes the bar look unloaded. */
+    background-image: linear-gradient(90deg, #0078d4, #7c3aed, #10b981);
     background-size: 200% 100%;
     animation: progressGradient 2s ease infinite;
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 600;
     display: flex;
     align-items: center;
@@ -396,15 +405,19 @@ body {
 .alert-success .btn-close {
     filter: brightness(0) invert(1);
 }
+/* These labels sit on the purple header gradient, not on a light card: the old
+   grey (#6b7280 / #9ca3af) was unreadable there. */
 .progress-label {
-    color: var(--text-secondary, #6b7280);
+    color: rgba(255, 255, 255, .92);
     font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, .25);
     min-height: 1rem;
 }
 
 .keyword-pool-label {
-    color: #9ca3af;
+    color: rgba(255, 255, 255, .65);
     font-size: .68rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, .2);
     min-height: .9rem;
 }
 
@@ -604,14 +617,24 @@ body {
 
 .eta-label,
 .countdown-label {
-    color: #6b7280;
+    color: rgba(255, 255, 255, .8);
     font-size: .7rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, .2);
     min-height: .9rem;
+}
+
+/* Idle state reserves nothing: four empty label rows left a ~90px gap between
+   the progress bar and the keyword counter. */
+.progress-label:empty,
+.eta-label:empty,
+.countdown-label:empty,
+.keyword-pool-label:empty {
+    display: none;
+    min-height: 0;
 }
 
 .countdown-label {
     font-variant-numeric: tabular-nums;
-    opacity: .8;
 }
 
 .last-run-label {

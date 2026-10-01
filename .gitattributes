@@ -1,0 +1,13 @@
+# Normalise line endings so a Windows checkout does not turn every regenerated
+# file into a whole-file diff, and so byte-level comparisons are meaningful.
+* text=auto
+
+*.js   text eol=lf
+*.mjs  text eol=lf
+*.json text eol=lf
+*.html text eol=lf
+*.css  text eol=lf
+*.md   text eol=lf
+
+*.png binary
+*.psd binary

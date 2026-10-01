@@ -531,6 +531,28 @@ async function withVanishedTab(fn) {
 }
 const tabListeners = listeners;
 
+await t("the last progress message is not a bogus 0%", async () => {
+  await reset({ view: DESKTOP_VIEW });
+  await send({ type: "startSearches", searchType: "desktop", settings: { ...settings, desktopSearches: 4 } });
+  await drain(4);
+  await settle(20);
+
+  const prog = messages.filter((m) => m.type === "progress");
+  assert.ok(prog.length >= 4, "no progress messages");
+  assert.equal(prog.at(-1).progress, 100,
+    `final progress reported ${prog.at(-1).progress}% - the bar snaps back to 0 after finishing`);
+  assert.equal(prog.at(-1).doneOverall, 4);
+});
+
+await t("a completed run does not resurrect cleared state", async () => {
+  await reset({ view: DESKTOP_VIEW });
+  await send({ type: "startSearches", searchType: "desktop", settings: { ...settings, desktopSearches: 3 } });
+  await drain(3);
+  await settle(20);
+  assert.equal(store.searchState, undefined,
+    "saveState() ran after clearRun() and wrote a dead state back to storage");
+});
+
 console.log("\n--- tab guards ---");
 
 await t("closing the automation tab stops the run and releases the debugger", async () => {
@@ -656,6 +678,54 @@ for (const [name, ok] of [
   else { console.log("  FAIL " + name); fail++; }
 }
 
+console.log("\n--- popup source invariants ---");
+const popupSrc = await fs.readFile("js/popup.js", "utf8");
+
+const popInv = [
+  ["no click handler is bound by bare function reference",
+   // jQuery invokes handlers with (event), so `$el.on('click', fn)` passes the
+   // click event into fn's first parameter. That is how saveConfigurationToStorage
+   // received an event object instead of settings and wiped the saved config.
+   !/\.on\(\s*['"]click['"]\s*,\s*[A-Za-z_$][\w$]*\s*\)/.test(popupSrc)],
+  ["save feedback is shown when the user presses Save",
+   /if \(!quiet\) showSuccess\(/.test(popupSrc)],
+  ["starting a run saves silently",
+   /saveConfigurationToStorage\(settings, \{ quiet: true \}\)/.test(popupSrc)],
+  ["settings are validated before being written",
+   /function isSettingsLike\(/.test(popupSrc)],
+  ["eta and countdown are cleared rather than left stale",
+   /function setEta\(ms\)[\s\S]{0,140}?ms <= 0\) return/.test(popupSrc)],
+];
+for (const [name, ok] of popInv) {
+  if (ok) { console.log("  ok   " + name); pass++; }
+  else { console.log("  FAIL " + name); fail++; }
+}
+
+const popupHtml = await fs.readFile("index.html", "utf8");
+const cssSrc = await fs.readFile("css/custom.css", "utf8");
+
+const uiInv = [
+  ["progress bar carries no Bootstrap striped/animated class",
+   !/class="[^"]*progress-bar-striped/.test(popupHtml) && !/progress-bar-animated/.test(popupHtml)],
+  ["progress track is tall enough for its own label",
+   /\.progress \{\s*height: 1[6-9]px/.test(cssSrc)],
+  ["custom gradient animation is not shadowed by Bootstrap's",
+   /\.progress-bar \{[\s\S]{0,600}?animation: progressGradient/.test(cssSrc)
+   && /\.progress-bar \{[\s\S]{0,600}?background-image: linear-gradient/.test(cssSrc)],
+  ["popup height grows with content instead of forcing 450px",
+   /min-height: 4\d\dpx;[\s\S]{0,60}?max-height: 5\d\dpx/.test(cssSrc)],
+  ["body padding clears the fixed footer",
+   /padding-bottom: 8\dpx/.test(cssSrc)],
+  ["idle labels collapse instead of reserving blank rows",
+   /\.progress-label:empty[\s\S]{0,200}?min-height: 0/.test(cssSrc)],
+  ["run labels are legible on the header gradient",
+   /\.progress-label \{[\s\S]{0,120}?rgba\(255, 255, 255/.test(cssSrc)],
+];
+for (const [name, ok] of uiInv) {
+  if (ok) { console.log("  ok   " + name); pass++; }
+  else { console.log("  FAIL " + name); fail++; }
+}
+
 console.log("\n--- keyword data ---");
 const { default: KEYWORDS } = await import("../data/keywords.js");
 const all = Object.values(KEYWORDS).flat();
@@ -686,10 +756,13 @@ await t("regenerating the dataset is reproducible", async () => {
   const { execFileSync } = await import("node:child_process");
   const fsSync = await import("node:fs");
   const file = "data/keywords.js";
+  // Git checks out CRLF on Windows, so compare content, not bytes.
+  const norm = (s) => s.replace(/\r\n/g, "\n");
   const before = fsSync.readFileSync(file, "utf8");
   try {
     execFileSync("node", ["tools/build-keywords.js"], { stdio: "pipe" });
-    assert.equal(fsSync.readFileSync(file, "utf8"), before, "generator is not deterministic");
+    const after = fsSync.readFileSync(file, "utf8");
+    assert.equal(norm(after), norm(before), "generator is not deterministic");
   } finally {
     fsSync.writeFileSync(file, before);
   }

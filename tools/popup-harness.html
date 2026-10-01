@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>popup harness</title>
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../css/fa-all.min.css" rel="stylesheet">
+    <link href="../css/custom.css" rel="stylesheet">
+</head>
+
+<body>
+    <div id="mount"></div>
+    <script>
+        // Minimal chrome.* shim so popup.js can run outside the extension.
+        const listeners = { message: [], connect: [] };
+        window.__chromeCalls = [];
+        window.__listeners = listeners;
+        // Back the shim with localStorage so a reload actually round-trips,
+        // the way chrome.storage.local does in the real extension.
+        const store = {
+            get(k, cb) {
+                const raw = localStorage.getItem('rsa:' + k);
+                cb(raw ? { [k]: JSON.parse(raw) } : {});
+            },
+            set(o, cb) {
+                for (const [k, v] of Object.entries(o)) localStorage.setItem('rsa:' + k, JSON.stringify(v));
+                cb && cb();
+            },
+            remove(k, cb) { localStorage.removeItem('rsa:' + k); cb && cb(); },
+        };
+        window.__storage = {};
+        globalThis.chrome = {
+            runtime: {
+                lastError: undefined,
+                connect: () => ({ onDisconnect: { addListener() {} }, disconnect() {} }),
+                sendMessage: (msg, cb) => {
+                    window.__chromeCalls.push(msg);
+                    const reply = {
+                        getState: { isRunning: false, totalKeywords: 1850 },
+                        getStats: { today: 12, streak: 3, total: 940, runsToday: 1 },
+                        getHistory: [
+                            { at: Date.now() - 8000, q: 'best hiking boots for wide feet', phase: 'desktop' },
+                            { at: Date.now() - 20000, q: 'how to reduce screen time', phase: 'mobile' },
+                        ],
+                        getRuns: [{ at: Date.now() - 60000, searches: 60, durationMs: 720000, type: 'desktopMobile' }],
+                        clearStats: { success: true },
+                    }[msg?.type];
+                    if (cb) queueMicrotask(() => cb(reply));
+                    return Promise.resolve();
+                },
+                onMessage: { addListener: (f) => listeners.message.push(f) },
+            },
+            storage: { local: store },
+        };
+    </script>
+    <script>
+        // Reuse the real popup markup, minus the <script> tags.
+        fetch('../index.html')
+            .then((r) => r.text())
+            .then((html) => {
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                doc.querySelectorAll('script').forEach((s) => s.remove());
+                document.getElementById('mount').append(...doc.body.children);
+            });
+    </script>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script src="../js/fa-all.min.js"></script>
+    <script type="module">
+        window.addEventListener('load', () => import('../js/popup.js'));
+    </script>
+</body>
+
+</html>

@@ -611,17 +611,29 @@ async function runSearch() {
       return h;
     });
 
-    if (state.doneInPhase < state.totalInPhase) {
-      // Persist the counter, then arm the timer: a crash in between resumes
-      // into a repeatable step rather than skipping a search.
-      await saveState();
-      scheduleNext(randomDelay());
-    } else {
-      await finishPhase();
+    // Report before branching: the final search of a run must publish its
+    // progress too, otherwise the bar freezes one step short of 100%.
+    const phaseDone = state.doneInPhase >= state.totalInPhase;
+
+await saveState();
+
+    // Arm the timer before reporting so the message carries nextSearchAt, which
+    // drives the countdown. Reporting after would publish a stale (or zero)
+    // countdown.
+    if (!phaseDone) scheduleNext(randomDelay());
+
+    // Report even on the final search of a run, otherwise the bar freezes one
+    // step short of 100%.
+    pushProgress();
+
+    if (phaseDone) {
+      const finished = await finishPhase();
+      // completeSearches() already cleared the run. Persisting or reporting
+      // progress now would rewrite a dead state and publish a bogus 0%.
+      if (finished) return;
     }
 
     await saveState();
-    pushProgress();
   } catch (e) {
     state.consecutiveFailures += 1;
     state.lastError = e.message;
@@ -639,16 +651,17 @@ async function runSearch() {
   }
 }
 
+// Returns true when the whole run is over, false when a further phase remains.
 async function finishPhase() {
   if (state.searchType === "desktop") {
     await completeSearches();
-    return;
+    return true;
   }
 
   if (state.searchType === "mobile") {
     await shutdownEmulation();
     await completeSearches();
-    return;
+    return true;
   }
 
   // desktopMobile
@@ -666,17 +679,18 @@ async function finishPhase() {
       warn("failed to enter mobile phase:", e.message);
       pushDiagnostics({ ok: false, phase: "mobile", error: e.message });
       await stopSearches("emulation-failed");
-      return;
+      return true;
     }
 
     notify({ type: "phaseChange", phase: "mobile", totalSearches: state.totalInPhase });
     await saveState();
     scheduleNext(randomDelay());
-    return;
+    return false;
   }
 
   await shutdownEmulation();
   await completeSearches();
+  return true;
 }
 
 async function shutdownEmulation() {

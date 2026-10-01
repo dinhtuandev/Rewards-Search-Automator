@@ -24,8 +24,10 @@ function bindEvents() {
     $(config.domElements.desktopButton).on('click', () => startSearches('desktop'))
     $(config.domElements.mobileButton).on('click', () => startSearches('mobile'))
     $(config.domElements.desktopMobileButton).on('click', () => startSearches('desktopMobile'))
-    $(config.domElements.saveConfigButton).on('click', saveConfigurationToStorage)
-    $(config.domElements.stopButton).on('click', stopRun)
+// Wrap in an arrow: jQuery invokes handlers with (event), so passing the
+// function by reference made `settings` the click event and stored it.
+$(config.domElements.saveConfigButton).on('click', () => saveConfigurationToStorage())
+$(config.domElements.stopButton).on('click', () => stopRun())
 
     $(config.domElements.checkEmulationButton).on('click', () => {
         chrome.runtime.sendMessage({ type: 'getDiagnostics' }, (d) => {
@@ -185,7 +187,9 @@ function writeSettings(s) {
 function startSearches(searchType) {
     const settings = readSettings()
     writeSettings(settings)
-    saveConfigurationToStorage(settings)
+    // Persist silently: the user did not press Save, and a "Saved!" toast here
+    // would compete with the run itself.
+    saveConfigurationToStorage(settings, { quiet: true })
 
     deactivateForms()
     showPanel(false)
@@ -373,11 +377,25 @@ function escapeHtml(s) {
 // ---------------------------------------------------------------------------
 // Persistence
 // ---------------------------------------------------------------------------
-function saveConfigurationToStorage(settings) {
-    const s = settings ?? readSettings()
+// Settings must never be an event object: a mistake here silently overwrites
+// the saved configuration and empties every form field.
+function isSettingsLike(v) {
+    return !!v && typeof v === 'object'
+        && Number.isFinite(Number(v.desktop ?? v.desktopSearches))
+        && Number.isFinite(Number(v.mobile ?? v.mobileSearches))
+}
+
+function saveConfigurationToStorage(settings, { quiet = false } = {}) {
+    const s = isSettingsLike(settings) ? settings : readSettings()
     writeSettings(s)
     config.searches = s
-    chrome.storage.local.set({ rewardsSearchConfig: s })
+    chrome.storage.local.set({ rewardsSearchConfig: s }, () => {
+        if (chrome.runtime.lastError) {
+            showError('Could not save the configuration.')
+            return
+        }
+        if (!quiet) showSuccess('Configuration saved.')
+    })
 }
 
 function loadConfigurationFromStorage() {
